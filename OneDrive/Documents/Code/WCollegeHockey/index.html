@@ -124,11 +124,122 @@
     .spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     @media (max-width: 900px) { header { padding: 1rem; } main { padding: 1rem; } table { font-size: 0.8rem; } .compare-grid { grid-template-columns: 1fr; } }
+
+    /* ── Mobile layout (≤768px) ──────────────────────────────────────────── */
+    .mobile-topbar { display: none; }
+    #mobile-cards  { display: none; }
+    #mobile-overlay { display: none; }
+    .mobile-drawer-backdrop { display: none; }
+    @media (max-width: 768px) {
+      header { padding: 0.75rem 1rem; flex-wrap: wrap; }
+      header h1 { font-size: 1.15rem; }
+      header p { display: none; }
+      #sync-status { font-size: 0.75rem; }
+      main { padding: 0 !important; gap: 0 !important; overflow: visible !important; }
+      .right-panel { display: none !important; }
+      .filter-show-tab { display: none !important; }
+
+      .mobile-topbar {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0.55rem 1rem; background: #fff; border-bottom: 1px solid var(--border);
+        position: sticky; top: 0; z-index: 50; gap: 0.5rem;
+      }
+      .mobile-topbar-count { font-size: 0.85rem; color: var(--text-muted); }
+      .mobile-filter-btn {
+        background: var(--accent); color: #fff; border: none;
+        border-radius: 0.4rem; padding: 0.4rem 0.85rem; font-size: 0.85rem; cursor: pointer;
+      }
+
+      #mobile-cards { display: block; padding: 0.75rem; }
+      #mobile-cards-empty { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 2rem 1rem; display: none; }
+      .mobile-card {
+        background: #fff; border: 1px solid var(--border); border-radius: 0.75rem;
+        padding: 0.8rem 1rem; margin-bottom: 0.6rem; cursor: pointer;
+        display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      }
+      .mobile-card-main { flex: 1; min-width: 0; }
+      .mobile-card-name { font-size: 1rem; font-weight: 600; margin: 0 0 0.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .mobile-card-meta { font-size: 0.76rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+      .mobile-card-coach { font-size: 0.85rem; color: var(--text-main); margin-bottom: 0.2rem; }
+      .mobile-card-contact { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+      .mobile-card-contact a { font-size: 0.82rem; color: var(--accent); text-decoration: none; }
+      .mobile-card-star { font-size: 1.4rem; cursor: pointer; color: var(--star-off); flex-shrink: 0; padding-top: 0.05rem; line-height: 1; }
+      .mobile-card-star.favorite { color: var(--star-on); }
+
+      /* Full-screen detail overlay */
+      #mobile-overlay {
+        position: fixed; inset: 0; background: var(--bg);
+        z-index: 200; overflow-y: auto; display: none;
+      }
+      #mobile-overlay.open { display: block; }
+      .mobile-overlay-topbar {
+        display: flex; align-items: center; gap: 0.75rem;
+        padding: 0.65rem 1rem; background: #fff; border-bottom: 1px solid var(--border);
+        position: sticky; top: 0; z-index: 10;
+      }
+      .mobile-back-btn {
+        background: none; border: 1px solid var(--border); border-radius: 0.4rem;
+        padding: 0.3rem 0.6rem; font-size: 0.9rem; cursor: pointer; flex-shrink: 0;
+      }
+      .mobile-overlay-school-name {
+        font-size: 1rem; font-weight: 600; flex: 1; min-width: 0;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .mobile-overlay-body { padding: 1rem; }
+      .mobile-overlay-body .detail-grid { grid-template-columns: 1fr; }
+      .mobile-overlay-body .compare-grid { grid-template-columns: 1fr; }
+
+      /* Bottom drawer (filter panel) */
+      #left-panel {
+        position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important;
+        top: auto !important; max-width: 100% !important; flex: none !important; width: 100% !important;
+        border-radius: 1rem 1rem 0 0; border-bottom: none !important;
+        max-height: 82vh; overflow-y: auto;
+        transform: translateY(100%);
+        transition: transform 0.28s ease;
+        z-index: 160; padding: 1rem 1.25rem !important;
+        opacity: 1 !important; border-color: var(--border) !important;
+      }
+      #left-panel.mobile-drawer-open { transform: translateY(0); }
+      #left-panel.collapsed { opacity: 1 !important; border-color: var(--border) !important; max-width: 100% !important; padding: 1rem 1.25rem !important; }
+      .panel-collapse-btn { display: none !important; }
+
+      .mobile-drawer-backdrop {
+        display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 155;
+      }
+      .mobile-drawer-backdrop.open { display: block; }
+      .mobile-drawer-close-row { display: flex; justify-content: flex-end; margin-bottom: 0.5rem; }
+      .mobile-drawer-close-btn { background: none; border: 1px solid var(--border); border-radius: 0.4rem; padding: 0.25rem 0.6rem; font-size: 0.85rem; cursor: pointer; }
+    }
   </style>
 </head>
 <body>
   <div id="loading-overlay"><div class="spinner"></div><span>Loading from cloud…</span></div>
   <button class="filter-show-tab" id="filter-show-tab" title="Show filters">▶</button>
+
+  <!-- Mobile top bar -->
+  <div class="mobile-topbar" id="mobile-topbar">
+    <span class="mobile-topbar-count" id="mobile-count"></span>
+    <button class="mobile-filter-btn" id="mobile-filter-btn">⚙ Filters</button>
+  </div>
+
+  <!-- Mobile cards list -->
+  <div id="mobile-cards">
+    <div id="mobile-cards-empty">No schools match your filters.</div>
+  </div>
+
+  <!-- Mobile full-screen detail overlay -->
+  <div id="mobile-overlay">
+    <div class="mobile-overlay-topbar">
+      <button class="mobile-back-btn" id="mobile-back-btn">← Back</button>
+      <div class="mobile-overlay-school-name" id="mobile-overlay-title"></div>
+    </div>
+    <div class="mobile-overlay-body" id="mobile-overlay-body"></div>
+  </div>
+
+  <!-- Backdrop for filter drawer -->
+  <div class="mobile-drawer-backdrop" id="mobile-drawer-backdrop"></div>
   <header>
     <div>
       <h1>Women's College Hockey Explorer</h1>
@@ -412,7 +523,9 @@
       if (preset === "hockeyRank") sortState = { column:"hockeyRank", direction:"asc" };
       else if (preset === "name") sortState = { column:"name", direction:"asc" };
       else if (preset === "journalism") sortState = { column:"journalismStrength", direction:"asc" };
-      renderTable(sortList(filtered, sortState.column, sortState.direction));
+      const sorted = sortList(filtered, sortState.column, sortState.direction);
+      renderTable(sorted);
+      renderMobileCards(sorted);
       updateHeaderIndicators();
       loadColumnWidths();
     }
@@ -712,6 +825,143 @@
     panelCollapseBtn.addEventListener("click", () => setPanelCollapsed(true));
     filterShowTab.addEventListener("click", () => setPanelCollapsed(false));
     function loadFiltersHidden() { try { const raw=localStorage.getItem(FILTERS_HIDDEN_KEY); if(raw) setPanelCollapsed(!!JSON.parse(raw)); } catch(e){} }
+
+    // ── Mobile cards ───────────────────────────────────────────────────────
+    const mobileCardsEl   = document.getElementById("mobile-cards");
+    const mobileCardsEmpty= document.getElementById("mobile-cards-empty");
+    const mobileOverlayEl = document.getElementById("mobile-overlay");
+    const mobileOverlayTitle = document.getElementById("mobile-overlay-title");
+    const mobileOverlayBody  = document.getElementById("mobile-overlay-body");
+    const mobileCountEl   = document.getElementById("mobile-count");
+    const mobileDrawerBackdrop = document.getElementById("mobile-drawer-backdrop");
+
+    function isMobile() { return window.innerWidth <= 768; }
+
+    function renderMobileCards(list) {
+      if (!isMobile()) return;
+      // Remove existing cards (not the empty msg)
+      Array.from(mobileCardsEl.children).forEach(c => { if (c.id !== "mobile-cards-empty") c.remove(); });
+      mobileCountEl.textContent = list.length + " school" + (list.length !== 1 ? "s" : "");
+      if (!list.length) { mobileCardsEmpty.style.display = "block"; return; }
+      mobileCardsEmpty.style.display = "none";
+      list.forEach(school => {
+        const card = document.createElement("div");
+        card.className = "mobile-card";
+        const coachLabel = school.headCoach ? `<div class="mobile-card-coach">${escapeHtml(school.coachType||"Head Coach")}: <strong>${escapeHtml(school.headCoach)}</strong></div>` : "";
+        const emailLink = school.coachEmail ? `<a href="mailto:${escapeHtml(school.coachEmail)}">${escapeHtml(school.coachEmail)}</a>` : "";
+        const phoneLink = school.coachPhone ? `<a href="tel:${escapeHtml(school.coachPhone)}">${escapeHtml(school.coachPhone)}</a>` : "";
+        const contact = (emailLink||phoneLink) ? `<div class="mobile-card-contact">${emailLink}${phoneLink}</div>` : "";
+        card.innerHTML = `
+          <div class="mobile-card-main">
+            <div class="mobile-card-name">${escapeHtml(school.name)}</div>
+            <div class="mobile-card-meta">${escapeHtml(school.division)} • ${escapeHtml(school.conference||"TBD")} • Rank: ${escapeHtml(school.hockeyRankLabel||school.hockeyRank||"N/A")}</div>
+            ${coachLabel}${contact}
+          </div>
+          <span class="mobile-card-star${school.isFavorite?" favorite":""}" data-id="${escapeHtml(school.id)}">★</span>`;
+        card.querySelector(".mobile-card-star").addEventListener("click", e => {
+          e.stopPropagation();
+          toggleFavorite(school.id);
+        });
+        card.addEventListener("click", () => showMobileOverlay(school.id));
+        mobileCardsEl.appendChild(card);
+      });
+    }
+
+    function showMobileOverlay(schoolId) {
+      const school = schools.find(s => s.id === schoolId);
+      if (!school) return;
+      selectedSchoolId = schoolId;
+      mobileOverlayTitle.textContent = school.name;
+      renderMobileDetail(school);
+      mobileOverlayEl.classList.add("open");
+      document.body.style.overflow = "hidden";
+    }
+
+    function hideMobileOverlay() {
+      mobileOverlayEl.classList.remove("open");
+      document.body.style.overflow = "";
+    }
+
+    function renderMobileDetail(school) {
+      mobileOverlayBody.innerHTML = `
+        <div class="detail-header">
+          <div><h2>${escapeHtml(school.name)}</h2><div class="detail-meta">${escapeHtml(school.division)} • ${escapeHtml(school.conference||"Conference TBD")} • ${escapeHtml(getLocation(school))}</div></div>
+          <div><span class="pill">${school.division==="DI"?"Division I":"Division III"}</span><span class="pill">Rank: ${escapeHtml(school.hockeyRankLabel||school.hockeyRank||"N/A")}</span></div>
+        </div>
+        <div class="detail-grid" style="margin-top:0.75rem;">
+          <div><div class="detail-block-title">Hockey Program</div><div class="detail-block-text">${escapeHtml(school.division)} • ${escapeHtml(school.conference||"TBD")} • Rank: ${escapeHtml(school.hockeyRankLabel||school.hockeyRank||"N/A")}</div></div>
+          <div><div class="detail-block-title">Academics &amp; Journalism</div><div class="detail-block-text">${escapeHtml(school.journalismStrength||"To be researched.")}</div></div>
+          <div><div class="detail-block-title">Coach &amp; Contact</div><div class="detail-block-text"><strong>${escapeHtml(school.coachType||"Head Coach")}:</strong> ${escapeHtml(school.headCoach||"To be added")}<br/>${school.coachEmail?`<a href="mailto:${escapeHtml(school.coachEmail)}">${escapeHtml(school.coachEmail)}</a>`:"<span style='color:var(--text-muted)'>No email yet</span>"}<br/>${school.coachPhone?`<a href="tel:${escapeHtml(school.coachPhone)}">${escapeHtml(school.coachPhone)}</a>`:"<span style='color:var(--text-muted)'>No phone yet</span>"}</div></div>
+        </div>
+        ${school.description?`<div class="detail-about"><strong>About this school:</strong> ${escapeHtml(school.description)}</div>`:""}
+        <div class="detail-notes" style="margin-top:0.75rem;"><strong>My Notes:</strong><textarea id="mobile-detail-notes" placeholder="Add your notes here…" style="width:100%;min-height:80px;margin-top:0.35rem;font-size:0.85rem;resize:vertical;">${escapeHtml(school.notes||"")}</textarea></div>
+        <div class="detail-footer" id="mobile-detail-footer" style="margin-top:0.75rem;flex-wrap:wrap;gap:0.5rem;display:flex;"></div>`;
+
+      document.getElementById("mobile-detail-notes").addEventListener("input", function() {
+        const target = schools.find(s => s.id === school.id);
+        if (target) { target.notes = this.value; cloudSave(target); }
+      });
+
+      const footer = document.getElementById("mobile-detail-footer");
+      if (school.website) {
+        const a = document.createElement("a"); a.className="btn secondary small"; a.textContent="Hockey Program"; a.target="_blank"; a.rel="noopener noreferrer"; a.href=school.website; footer.appendChild(a);
+      }
+      if (school.mainWebsite) {
+        const a = document.createElement("a"); a.className="btn secondary small"; a.textContent="School Website"; a.target="_blank"; a.rel="noopener noreferrer"; a.href=school.mainWebsite; footer.appendChild(a);
+      }
+      const favBtn = document.createElement("button"); favBtn.type="button"; favBtn.className="btn secondary small"; favBtn.textContent=school.isFavorite?"★ Unfavorite":"☆ Favorite";
+      favBtn.addEventListener("click", () => { toggleFavorite(school.id); renderMobileDetail(schools.find(s=>s.id===school.id)); });
+      footer.appendChild(favBtn);
+      const editBtn = document.createElement("button"); editBtn.type="button"; editBtn.className="btn secondary small"; editBtn.textContent="Edit Coach";
+      editBtn.addEventListener("click", () => renderMobileCoachEditForm(school));
+      footer.appendChild(editBtn);
+    }
+
+    function renderMobileCoachEditForm(school) {
+      renderMobileDetail(school);
+      const form = document.createElement("div");
+      form.className = "coach-edit-form";
+      form.innerHTML = `
+        <div class="detail-block-title">Update Coach Information</div>
+        <div class="filter-group"><label for="mcet">Coach Type</label><select id="mcet"><option value="Head Coach" ${(school.coachType||"Head Coach")==="Head Coach"?"selected":""}>Head Coach</option><option value="Assistant Coach" ${(school.coachType||"")==="Assistant Coach"?"selected":""}>Assistant Coach</option></select></div>
+        <div class="filter-group"><label for="mcen">Coach Name</label><input type="text" id="mcen" value="${escapeHtml(school.headCoach||"")}" /></div>
+        <div class="filter-group"><label for="mcee">Email</label><input type="email" id="mcee" value="${escapeHtml(school.coachEmail||"")}" /></div>
+        <div class="filter-group"><label for="mcep">Phone</label><input type="tel" id="mcep" value="${escapeHtml(school.coachPhone||"")}" /></div>
+        <div class="coach-edit-actions"><button id="mces" class="btn small" type="button">Save</button><button id="mcec" class="btn secondary small" type="button">Cancel</button></div>`;
+      mobileOverlayBody.appendChild(form);
+      form.querySelector("#mces").addEventListener("click", async () => {
+        const target = schools.find(s => s.id === school.id);
+        if (target) {
+          target.coachType  = form.querySelector("#mcet").value;
+          target.headCoach  = form.querySelector("#mcen").value.trim();
+          target.coachEmail = form.querySelector("#mcee").value.trim();
+          target.coachPhone = form.querySelector("#mcep").value.trim();
+          cloudSave(target, 0);
+          buildConferenceOptions(); applyFilters();
+          renderMobileDetail(target);
+          mobileOverlayTitle.textContent = target.name;
+        }
+      });
+      form.querySelector("#mcec").addEventListener("click", () => renderMobileDetail(school));
+    }
+
+    // Mobile filter drawer
+    function openMobileDrawer() {
+      leftPanelEl.classList.add("mobile-drawer-open");
+      leftPanelEl.classList.remove("collapsed");
+      filterShowTab.style.display = "none";
+      mobileDrawerBackdrop.classList.add("open");
+      document.body.style.overflow = "hidden";
+    }
+    function closeMobileDrawer() {
+      leftPanelEl.classList.remove("mobile-drawer-open");
+      mobileDrawerBackdrop.classList.remove("open");
+      if (!mobileOverlayEl.classList.contains("open")) document.body.style.overflow = "";
+    }
+
+    document.getElementById("mobile-filter-btn").addEventListener("click", openMobileDrawer);
+    mobileDrawerBackdrop.addEventListener("click", closeMobileDrawer);
+    document.getElementById("mobile-back-btn").addEventListener("click", hideMobileOverlay);
 
     filterDiEl.addEventListener("change", applyFilters);
     filterDiiiEl.addEventListener("change", applyFilters);
