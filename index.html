@@ -31,8 +31,6 @@
       --col-coach-min: 180px;
       --col-email-min: 210px;
       --col-phone-min: 150px;
-      --col-notes-min: 280px;
-      --col-compare-min: 80px;
       --col-delete-min: 80px;
     }
     * { box-sizing: border-box; }
@@ -47,6 +45,7 @@
     .sync-status.error   { background: var(--danger-soft); color: var(--danger); cursor: pointer; }
     .sync-status.offline { background: #fef9c3; color: #92400e; }
     main { display: flex; flex-wrap: nowrap; padding: 1.5rem 2rem; gap: 1.5rem; overflow: hidden; }
+    @media (max-width: 768px) { main { display: none !important; } }
     .panel { background: var(--panel-bg); border-radius: 0.75rem; border: 1px solid var(--border); padding: 1rem 1.25rem; }
     .left-panel { flex: 0 0 320px; max-width: 320px; display: flex; flex-direction: column; gap: 1rem; overflow: hidden; transition: flex-basis 0.25s ease, max-width 0.25s ease, padding 0.25s ease, border-color 0.25s ease, opacity 0.2s ease; }
     .left-panel.collapsed { flex: 0 0 0px; max-width: 0; padding-left: 0; padding-right: 0; opacity: 0; border-color: transparent; }
@@ -88,17 +87,19 @@
     th:nth-child(8), td:nth-child(8) { min-width: var(--col-coach-min); }
     th:nth-child(9), td:nth-child(9) { min-width: var(--col-email-min); }
     th:nth-child(10), td:nth-child(10) { min-width: var(--col-phone-min); }
-    th:nth-child(11), td:nth-child(11) { min-width: var(--col-notes-min); white-space: normal; }
-    th:nth-child(12), td:nth-child(12) { min-width: var(--col-compare-min); text-align: center; }
-    th:nth-child(13), td:nth-child(13) { min-width: var(--col-delete-min); text-align: center; }
+    th:nth-child(11), td:nth-child(11) { min-width: var(--col-delete-min); text-align: center; }
     tbody tr { cursor: pointer; }
     tbody tr:nth-child(even) { background: #f9fafb; }
-    tbody tr.selected { background: #f0f6ff; }
+    tbody tr.expanded { background: var(--accent-soft); }
+    .detail-row td { padding: 0 !important; border-bottom: 1px solid var(--border); }
+    .detail-row-inner { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.28s ease; }
+    .detail-row.open .detail-row-inner { grid-template-rows: 1fr; }
+    .detail-row-inner > div { overflow: hidden; }
+    .detail-row-content { padding: 1rem 1.25rem; background: #f0f6ff; border-top: 2px solid var(--accent); }
     .star { font-size: 1rem; cursor: pointer; color: var(--star-off); }
     .star.favorite { color: var(--star-on); }
     .star:hover { transform: scale(1.1); }
     .location-cell { white-space: nowrap; }
-    .notes-cell textarea { min-height: 44px; font-size: 0.8rem; resize: vertical; }
     .empty-message { padding: 0.75rem; font-size: 0.9rem; color: var(--text-muted); }
     .detail-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.5rem; }
     .detail-header h2 { margin: 0; font-size: 1.1rem; font-weight: 600; }
@@ -113,11 +114,6 @@
     .detail-notes textarea { margin-top: 0.35rem; width: 100%; min-height: 80px; font-size: 0.85rem; resize: vertical; }
     .detail-footer { margin-top: 0.75rem; display: flex; justify-content: flex-start; gap: 0.5rem; flex-wrap: wrap; }
     .pill { display: inline-flex; align-items: center; padding: 0.2rem 0.5rem; border-radius: 999px; background: #eef2ff; color: var(--accent); font-size: 0.75rem; margin-left: 0.25rem; }
-    .compare-grid { display: grid; grid-template-columns: repeat(2, minmax(220px, 1fr)); gap: 1rem; }
-    .compare-card { border: 1px solid var(--border); border-radius: 0.75rem; padding: 0.75rem; background: #f9fafb; }
-    .compare-card h3 { margin: 0 0 0.25rem; font-size: 1rem; }
-    .compare-row { font-size: 0.85rem; margin-bottom: 0.25rem; }
-    .compare-label { font-weight: 600; }
     .coach-edit-form { margin-top: 0.5rem; padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); background: #f9fafb; font-size: 0.85rem; }
     .coach-edit-actions { display: flex; gap: 0.5rem; margin-top: 0.25rem; }
     .status-line { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem; }
@@ -126,7 +122,7 @@
     #loading-overlay.hidden { display: none; }
     .spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    @media (max-width: 900px) { header { padding: 1rem; } main { padding: 1rem; } table { font-size: 0.8rem; } .compare-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 900px) { header { padding: 1rem; } main { padding: 1rem; } table { font-size: 0.8rem; } }
 
     /* ── Mobile layout (≤768px) ──────────────────────────────────────────── */
     .mobile-topbar { display: none; }
@@ -191,7 +187,6 @@
       }
       .mobile-overlay-body { padding: 1rem; }
       .mobile-overlay-body .detail-grid { grid-template-columns: 1fr; }
-      .mobile-overlay-body .compare-grid { grid-template-columns: 1fr; }
 
       /* Bottom drawer (filter panel) */
       #left-panel {
@@ -216,23 +211,6 @@
       .mobile-drawer-close-btn { background: none; border: 1px solid var(--border); border-radius: 0.4rem; padding: 0.25rem 0.6rem; font-size: 0.85rem; cursor: pointer; }
     }
   </style>
-  <script>
-    // Cache-busting: Increment APP_VERSION whenever you deploy changes
-    // This forces a URL redirect with ?v=X.X, which bypasses GitHub Pages' cache
-    // Example: 2.0 → 2.1 → 2.2, etc.
-    (function() {
-      const APP_VERSION = "2.1";
-      const currentUrl = window.location.href;
-      const urlObj = new URL(currentUrl);
-      const vParam = urlObj.searchParams.get("v");
-      
-      // If no version parameter or different version, redirect to versioned URL
-      if (!vParam || vParam !== APP_VERSION) {
-        urlObj.searchParams.set("v", APP_VERSION);
-        window.location.href = urlObj.toString();
-      }
-    })();
-  </script>
 </head>
 <body>
   <div id="loading-overlay"><div class="spinner"></div><span>Loading from cloud…</span></div>
@@ -331,22 +309,685 @@
               <th class="sortable" data-col="headCoach">Head Coach<span class="sort-indicator"></span><div class="col-resizer" data-col-index="7"></div></th>
               <th class="sortable" data-col="coachEmail">Email<span class="sort-indicator"></span><div class="col-resizer" data-col-index="8"></div></th>
               <th class="sortable" data-col="coachPhone">Phone<span class="sort-indicator"></span><div class="col-resizer" data-col-index="9"></div></th>
-              <th class="sortable" data-col="notes">My Notes<span class="sort-indicator"></span><div class="col-resizer" data-col-index="10"></div></th>
-              <th data-col="compare">Compare<div class="col-resizer" data-col-index="11"></div></th>
-              <th data-col="delete">Delete<div class="col-resizer" data-col-index="12"></div></th>
+              <th data-col="delete">Delete<div class="col-resizer" data-col-index="10"></div></th>
             </tr></thead>
             <tbody id="schools-tbody"></tbody>
           </table>
           <div id="table-empty" class="empty-message" style="display:none;">No schools match your filters.</div>
         </div>
       </div>
-      <div>
-        <div class="section-title">Details / Comparison</div>
-        <div id="detail-panel"><div class="empty-message">Select a school from the table above to see details.</div></div>
-      </div>
     </section>
   </main>
 
-  <script src="app.js"></script>
+  <script>
+    // ── Azure Table Storage configuration ──────────────────────────────────
+    const AZ_ACCOUNT   = "sophiacollegehockey";
+    const AZ_TABLE     = "schools";
+    const AZ_SAS       = "sv=2026-02-06&ss=t&srt=o&sp=rwdlau&se=2028-06-14T22:47:41Z&st=2026-06-14T14:32:41Z&spr=https&sig=qoir%2B%2FdFgfSZ8Se7bCH64e6Sb1d7%2Fsd4aEaayp5HrpY%3D";
+    const AZ_PARTITION = "sophia";
+    const AZ_BASE      = `https://${AZ_ACCOUNT}.table.core.windows.net`;
+    const AZ_HEADERS   = { "Accept": "application/json;odata=nometadata", "x-ms-version": "2020-12-06" };
+
+    function entityUrl(rowKey) {
+      return `${AZ_BASE}/${AZ_TABLE}(PartitionKey='${AZ_PARTITION}',RowKey='${encodeURIComponent(rowKey)}')?${AZ_SAS}`;
+    }
+    function queryUrl() {
+      return `${AZ_BASE}/${AZ_TABLE}()?${AZ_SAS}`;
+    }
+
+    async function azFetchAll() {
+      const res = await fetch(queryUrl(), { headers: AZ_HEADERS });
+      if (!res.ok) throw new Error(`Azure query failed: ${res.status}`);
+      return (await res.json()).value || [];
+    }
+    async function azUpsert(school) {
+      const entity = {
+        PartitionKey: AZ_PARTITION,
+        RowKey: school.id,
+        notes:      school.notes      || "",
+        isFavorite: !!school.isFavorite,
+        headCoach:  school.headCoach  || "",
+        coachEmail: school.coachEmail || "",
+        coachPhone: school.coachPhone || "",
+        coachType:  school.coachType  || "Head Coach",
+        isCustom:   !!school._isCustom
+      };
+      if (school._isCustom) {
+        Object.assign(entity, {
+          customName: school.name, customDivision: school.division,
+          customConference: school.conference || "", customCity: school.city || "",
+          customState: school.state || "", customHockeyRank: school.hockeyRank || 0,
+          customHockeyRankLabel: school.hockeyRankLabel || "",
+          customJournalismStrength: school.journalismStrength || "",
+          customDescription: school.description || "",
+          customWebsite: school.website || "", customMainWebsite: school.mainWebsite || ""
+        });
+      }
+      const res = await fetch(entityUrl(school.id), {
+        method: "PUT",
+        headers: { ...AZ_HEADERS, "Content-Type": "application/json" },
+        body: JSON.stringify(entity)
+      });
+      if (!res.ok && res.status !== 204) throw new Error(`Azure upsert failed: ${res.status}`);
+    }
+    async function azDelete(id) {
+      const res = await fetch(entityUrl(id), {
+        method: "DELETE",
+        headers: { ...AZ_HEADERS, "If-Match": "*" }
+      });
+      if (!res.ok && res.status !== 404 && res.status !== 204) throw new Error(`Azure delete failed: ${res.status}`);
+    }
+
+    // ── Initial school data ────────────────────────────────────────────────
+    const initialSchools = [
+      { id:"wisconsin-di",   name:"University of Wisconsin–Madison",   division:"DI",   conference:"WCHA",       hockeyRank:1,   hockeyRankLabel:"#1",       journalismStrength:"Top 5 journalism school nationally",                      city:"Madison",     state:"WI", description:"National powerhouse in women's hockey and one of the strongest journalism schools in the country.",                                                                          website:"https://uwbadgers.com/sports/womens-ice-hockey",        mainWebsite:"https://www.wisc.edu" },
+      { id:"northeastern-di",name:"Northeastern University",           division:"DI",   conference:"Hockey East",hockeyRank:10,  hockeyRankLabel:"#10",      journalismStrength:"Co-op program with real newsroom placements",              city:"Boston",      state:"MA", description:"Combines top-tier Hockey East competition with a co-op model placing students directly into professional newsrooms.",                                                       website:"https://nuhuskies.com/sports/womens-ice-hockey",        mainWebsite:"https://www.northeastern.edu" },
+      { id:"bu-di",          name:"Boston University",                 division:"DI",   conference:"Hockey East",hockeyRank:27,  hockeyRankLabel:"#27",      journalismStrength:"Top 3 journalism program; New England media hub",          city:"Boston",      state:"MA", description:"BU's College of Communication has deep ties to Boston's media ecosystem. Hockey is competitive and the city is a perfect lab for investigative reporting.",               website:"https://goterriers.com/sports/womens-ice-hockey",       mainWebsite:"https://www.bu.edu" },
+      { id:"cornell-di",     name:"Cornell University",                division:"DI",   conference:"ECAC",       hockeyRank:13,  hockeyRankLabel:"#13",      journalismStrength:"Ivy-caliber writing and independent student paper",        city:"Ithaca",      state:"NY", description:"Strong ECAC hockey paired with Ivy-level academics and the Cornell Daily Sun, one of the best independent college newspapers.",                                              website:"https://cornellbigred.com/sports/womens-ice-hockey",    mainWebsite:"https://www.cornell.edu" },
+      { id:"minnesota-di",   name:"University of Minnesota",           division:"DI",   conference:"WCHA",       hockeyRank:3,   hockeyRankLabel:"#3",       journalismStrength:"Flagship journalism school with strong newsroom ties",     city:"Minneapolis", state:"MN", description:"Perennial national contender in the WCHA with a respected journalism program and vibrant local media market.",                                                             website:"https://gophersports.com/sports/womens-ice-hockey",     mainWebsite:"https://www.umn.edu" },
+      { id:"syracuse-di",    name:"Syracuse University",               division:"DI",   conference:"AHA",        hockeyRank:30,  hockeyRankLabel:"#30",      journalismStrength:"Newhouse School – #1 communications program",             city:"Syracuse",    state:"NY", description:"Journalism-first choice with the Newhouse School's unmatched reputation. Hockey is competitive but not a national power.",                                                 website:"https://cuse.com/sports/womens-ice-hockey",             mainWebsite:"https://www.syracuse.edu" },
+      { id:"ohiostate-di",   name:"Ohio State University",             division:"DI",   conference:"WCHA",       hockeyRank:2,   hockeyRankLabel:"#2",       journalismStrength:"Large, well-funded journalism and communication program", city:"Columbus",    state:"OH", description:"Nearly at Wisconsin's level in WCHA hockey with a strong journalism school and major media market internships.",                                                           website:"https://ohiostatebuckeyes.com/sports/womens-ice-hockey",mainWebsite:"https://www.osu.edu" },
+      { id:"colgate-di",     name:"Colgate University",                division:"DI",   conference:"ECAC",       hockeyRank:2.1, hockeyRankLabel:"#2 (ECAC)",journalismStrength:"Elite alumni network; strong writing and rhetoric",        city:"Hamilton",    state:"NY", description:"Top ECAC hockey program with an impressive roster of journalism and media alumni. Small liberal arts environment that builds strong writing skills.",                        website:"https://gocolgateraiders.com/sports/womens-ice-hockey", mainWebsite:"https://www.colgate.edu" },
+      { id:"quinnipiac-di",  name:"Quinnipiac University",             division:"DI",   conference:"ECAC",       hockeyRank:5.1, hockeyRankLabel:"#5 (ECAC)",journalismStrength:"Journalism major plus nationally known polling institute", city:"Hamden",      state:"CT", description:"Competitive ECAC hockey with a dedicated journalism program and unique access to the Quinnipiac Poll.",                                                                    website:"https://gobobcats.com/sports/womens-ice-hockey",        mainWebsite:"https://www.quinnipiac.edu" },
+      { id:"princeton-di",   name:"Princeton University",              division:"DI",   conference:"ECAC",       hockeyRank:7.1, hockeyRankLabel:"#7 (ECAC)",journalismStrength:"Ivy prestige; strong politics and public affairs",         city:"Princeton",   state:"NJ", description:"Highly selective Ivy with competitive hockey and exceptional academic strength. Maximum long-term career doors open.",                                                       website:"https://goprincetontigers.com/sports/womens-ice-hockey",mainWebsite:"https://www.princeton.edu" },
+      { id:"amherst-diii",   name:"Amherst College",                   division:"DIII", conference:"NESCAC",     hockeyRank:2,   hockeyRankLabel:"#2",       journalismStrength:"Elite liberal arts; strong path to top grad journalism",  city:"Amherst",     state:"MA", description:"Top D3 hockey program with world-class academics. Path that combines serious hockey with graduate journalism at places like Columbia or Northwestern.",                     website:"https://athletics.amherst.edu/sports/womens-ice-hockey",mainWebsite:"https://www.amherst.edu" },
+      { id:"middlebury-diii",name:"Middlebury College",                division:"DIII", conference:"NESCAC",     hockeyRank:6,   hockeyRankLabel:"#6",       journalismStrength:"Strong writing and global/environmental focus",           city:"Middlebury",  state:"VT", description:"Consistently excellent D3 hockey with a writing and media culture leaning into global and environmental issues.",                                                          website:"https://athletics.middlebury.edu/sports/womens-ice-hockey",mainWebsite:"https://www.middlebury.edu" },
+      { id:"colby-diii",     name:"Colby College",                     division:"DIII", conference:"NESCAC",     hockeyRank:10,  hockeyRankLabel:"#10",      journalismStrength:"Rare journalism major within NESCAC",                    city:"Waterville",  state:"ME", description:"One of the only NESCAC schools with a true journalism major, paired with strong D3 hockey.",                                                                             website:"https://colbyathletics.com/sports/womens-ice-hockey",   mainWebsite:"https://www.colby.edu" },
+      { id:"hamilton-diii",  name:"Hamilton College",                  division:"DIII", conference:"NESCAC",     hockeyRank:20,  hockeyRankLabel:"#20",      journalismStrength:"Renowned writing program across disciplines",             city:"Clinton",     state:"NY", description:"Famous for its writing curriculum, ideal if Sophia's core strength is storytelling and analysis.",                                                                          website:"https://athletics.hamilton.edu/sports/womens-ice-hockey",mainWebsite:"https://www.hamilton.edu" },
+      { id:"bowdoin-diii",   name:"Bowdoin College",                   division:"DIII", conference:"NESCAC",     hockeyRank:13,  hockeyRankLabel:"#13",      journalismStrength:"Strong politics and writing tradition",                  city:"Brunswick",   state:"ME", description:"Competitive hockey with excellent political science and writing programs. The Bowdoin Orient is one of the oldest college newspapers.",                                       website:"https://athletics.bowdoin.edu/sports/womens-ice-hockey", mainWebsite:"https://www.bowdoin.edu" },
+      { id:"uwrf-diii",      name:"University of Wisconsin–River Falls",division:"DIII", conference:"WIAC",      hockeyRank:1,   hockeyRankLabel:"#1",       journalismStrength:"Dedicated journalism and media studies major",           city:"River Falls", state:"WI", description:"Three-time consecutive D3 national champions with a real journalism major and proximity to the Twin Cities media market.",                                                  website:"https://uwrfsports.com/sports/womens-ice-hockey",       mainWebsite:"https://www.uwrf.edu" },
+      { id:"gustavus-diii",  name:"Gustavus Adolphus College",         division:"DIII", conference:"MIAC",       hockeyRank:3,   hockeyRankLabel:"#3",       journalismStrength:"Strong communication and journalism program",            city:"St. Peter",   state:"MN", description:"National championship pedigree with a dedicated journalism major and access to the Minneapolis–St. Paul media market.",                                                    website:"https://gustavus.edu/athletics/womens-hockey/",         mainWebsite:"https://gustavus.edu" },
+      { id:"adrian-diii",    name:"Adrian College",                    division:"DIII", conference:"NCHA",       hockeyRank:5,   hockeyRankLabel:"#5",       journalismStrength:"Communication and media studies with hands-on outlets",  city:"Adrian",      state:"MI", description:"Top NCHA program that regularly competes for national titles. Practical journalism program with strong mentorship.",                                                          website:"https://adrianbulldogs.com/sports/womens-ice-hockey",   mainWebsite:"https://www.adrian.edu" },
+      { id:"tufts-diii",     name:"Tufts University",                  division:"DIII", conference:"NESCAC",     hockeyRank:22,  hockeyRankLabel:"#22",      journalismStrength:"Excellent IR, politics, and media studies; Boston access",city:"Medford",    state:"MA", description:"NESCAC hockey plus direct access to Boston's media ecosystem. Great for investigative journalism in international affairs, policy, or science/health.",                    website:"https://gotuftsjumbos.com/sports/womens-ice-hockey",    mainWebsite:"https://www.tufts.edu" },
+      { id:"williams-diii",  name:"Williams College",                  division:"DIII", conference:"NESCAC",     hockeyRank:24,  hockeyRankLabel:"#24",      journalismStrength:"#1-ranked liberal arts college; elite writing",          city:"Williamstown",state:"MA", description:"Extremely selective liberal arts college with outstanding writing and academic rigor. Opens doors to top graduate journalism programs.",                                     website:"https://ephsports.williams.edu/sports/womens-ice-hockey",mainWebsite:"https://www.williams.edu" }
+    ];
+
+    // ── App state ──────────────────────────────────────────────────────────
+    const COLUMN_WIDTHS_KEY = "sophia_college_column_widths_v4";
+    const FILTERS_HIDDEN_KEY = "sophia_filters_hidden";
+    let schools = [];
+    let expandedIds = new Set();
+    let sortState = { column: "hockeyRank", direction: "asc" };
+
+    // ── School normalization ───────────────────────────────────────────────
+    function normalizeSchool(s) {
+      return {
+        ...s,
+        notes:      s.notes      || "",
+        description:s.description|| "",
+        mainWebsite:s.mainWebsite || "",
+        headCoach:  s.headCoach  || "",
+        coachEmail: s.coachEmail || "",
+        coachPhone: s.coachPhone || "",
+        coachType:  s.coachType  || "Head Coach",
+        isFavorite: !!s.isFavorite,
+        _isCustom:  !!s._isCustom
+      };
+    }
+
+    function mergeEntitiesWithInitial(entities) {
+      const result = JSON.parse(JSON.stringify(initialSchools)).map(normalizeSchool);
+      entities.forEach(e => {
+        if (e.isCustom) {
+          if (!result.find(s => s.id === e.RowKey)) {
+            result.push(normalizeSchool({
+              id: e.RowKey, _isCustom: true,
+              name: e.customName || e.RowKey, division: e.customDivision || "DI",
+              conference: e.customConference || "", city: e.customCity || "", state: e.customState || "",
+              hockeyRank: e.customHockeyRank || null, hockeyRankLabel: e.customHockeyRankLabel || "",
+              journalismStrength: e.customJournalismStrength || "", description: e.customDescription || "",
+              website: e.customWebsite || "", mainWebsite: e.customMainWebsite || "",
+              notes: e.notes || "", isFavorite: !!e.isFavorite,
+              headCoach: e.headCoach || "", coachEmail: e.coachEmail || "",
+              coachPhone: e.coachPhone || "", coachType: e.coachType || "Head Coach"
+            }));
+          }
+        } else {
+          const school = result.find(s => s.id === e.RowKey);
+          if (school) {
+            school.notes      = e.notes      || "";
+            school.isFavorite = !!e.isFavorite;
+            school.headCoach  = e.headCoach  || "";
+            school.coachEmail = e.coachEmail || "";
+            school.coachPhone = e.coachPhone || "";
+            school.coachType  = e.coachType  || "Head Coach";
+          }
+        }
+      });
+      return result;
+    }
+
+    // ── Sync status UI ─────────────────────────────────────────────────────
+    function setSyncStatus(state, msg) {
+      const el = document.getElementById("sync-status");
+      el.className = "sync-status " + state;
+      el.textContent = msg || { loading:"⟳ Loading…", saving:"⟳ Saving…", synced:"✓ Synced", error:"⚠ Sync error", offline:"⚠ Offline" }[state] || "";
+    }
+
+    // ── Debounced cloud save ───────────────────────────────────────────────
+    const _pendingSaves = {};
+    function cloudSave(school, delayMs = 1200) {
+      setSyncStatus("saving");
+      if (_pendingSaves[school.id]) clearTimeout(_pendingSaves[school.id]);
+      _pendingSaves[school.id] = setTimeout(async () => {
+        delete _pendingSaves[school.id];
+        try {
+          await azUpsert(school);
+          if (!Object.keys(_pendingSaves).length) setSyncStatus("synced");
+        } catch (err) {
+          console.warn("Cloud save failed", school.id, err);
+          setSyncStatus("error");
+        }
+      }, delayMs);
+    }
+
+    // ── UI helpers ─────────────────────────────────────────────────────────
+    function escapeHtml(v) { return String(v ?? "").replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c])); }
+    function getLocation(s) { return (s.city || "") + (s.city && s.state ? ", " : "") + (s.state || ""); }
+
+    const filterDiEl        = document.getElementById("filter-di");
+    const filterDiiiEl      = document.getElementById("filter-diii");
+    const filterConferenceEl= document.getElementById("filter-conference");
+    const filterSearchEl    = document.getElementById("filter-search");
+    const filterSortEl      = document.getElementById("filter-sort");
+    const filterFavoritesEl = document.getElementById("filter-favorites");
+    const tbodyEl           = document.getElementById("schools-tbody");
+    const tableEmptyEl      = document.getElementById("table-empty");
+
+    function buildConferenceOptions() {
+      const cur = filterConferenceEl.value;
+      const conferences = Array.from(new Set(schools.map(s => s.conference).filter(Boolean))).sort();
+      filterConferenceEl.innerHTML = '<option value="">All conferences</option>' + conferences.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+      if (conferences.includes(cur)) filterConferenceEl.value = cur;
+    }
+
+    // ── Filter / sort / render ─────────────────────────────────────────────
+    function applyFilters() {
+      let filtered = schools.slice();
+      filtered = filtered.filter(s => !(s.division === "DI" && !filterDiEl.checked) && !(s.division === "DIII" && !filterDiiiEl.checked));
+      if (filterConferenceEl.value) filtered = filtered.filter(s => s.conference === filterConferenceEl.value);
+      const search = filterSearchEl.value.trim().toLowerCase();
+      if (search) filtered = filtered.filter(s => [s.name,s.city,s.state,s.conference,s.journalismStrength,s.headCoach,s.coachEmail,s.coachPhone,s.notes,s.description].join(" ").toLowerCase().includes(search));
+      if (filterFavoritesEl.checked) filtered = filtered.filter(s => s.isFavorite);
+      const preset = filterSortEl.value;
+      if (preset === "hockeyRank") sortState = { column:"hockeyRank", direction:"asc" };
+      else if (preset === "name") sortState = { column:"name", direction:"asc" };
+      else if (preset === "journalism") sortState = { column:"journalismStrength", direction:"asc" };
+      const sorted = sortList(filtered, sortState.column, sortState.direction);
+      renderTable(sorted);
+      renderMobileCards(sorted);
+      updateHeaderIndicators();
+      loadColumnWidths();
+    }
+    function sortList(list, column, direction) {
+      const dir = direction === "asc" ? 1 : -1;
+      return list.sort((a, b) => {
+        if (column === "favorite") return ((b.isFavorite?1:0)-(a.isFavorite?1:0))*dir;
+        if (column === "hockeyRank") return (((typeof a.hockeyRank==="number")?a.hockeyRank:999)-((typeof b.hockeyRank==="number")?b.hockeyRank:999))*dir;
+        if (column === "division") return (({DI:0,DIII:1}[a.division]??99)-({DI:0,DIII:1}[b.division]??99))*dir;
+        if (column === "location") return getLocation(a).localeCompare(getLocation(b))*dir;
+        return (a[column]||"").toString().toLowerCase().localeCompare((b[column]||"").toString().toLowerCase())*dir;
+      });
+    }
+    function getCurrentFiltered() {
+      let filtered = schools.slice();
+      filtered = filtered.filter(s => !(s.division==="DI"&&!filterDiEl.checked) && !(s.division==="DIII"&&!filterDiiiEl.checked));
+      if (filterConferenceEl.value) filtered = filtered.filter(s => s.conference===filterConferenceEl.value);
+      const search = filterSearchEl.value.trim().toLowerCase();
+      if (search) filtered = filtered.filter(s => [s.name,s.city,s.state,s.conference,s.journalismStrength,s.headCoach,s.coachEmail,s.coachPhone,s.notes,s.description].join(" ").toLowerCase().includes(search));
+      if (filterFavoritesEl.checked) filtered = filtered.filter(s => s.isFavorite);
+      return filtered;
+    }
+
+    function renderTable(list) {
+      tbodyEl.innerHTML = "";
+      if (!list.length) { tableEmptyEl.style.display = "block"; return; }
+      tableEmptyEl.style.display = "none";
+      list.forEach(school => {
+        const tr = document.createElement("tr");
+        tr.dataset.id = school.id;
+        if (expandedIds.has(school.id)) tr.classList.add("expanded");
+
+        const favTd = document.createElement("td");
+        const star = document.createElement("span");
+        star.className = "star" + (school.isFavorite ? " favorite" : "");
+        star.textContent = "★";
+        star.title = school.isFavorite ? "Remove from favorites" : "Add to favorites";
+        star.addEventListener("click", e => { e.stopPropagation(); toggleFavorite(school.id); });
+        favTd.appendChild(star); tr.appendChild(favTd);
+
+        [[school.name],[school.division],[school.conference||""],[school.hockeyRankLabel||school.hockeyRank||""],[school.journalismStrength||""],[getLocation(school)],[school.headCoach||""],[school.coachEmail||""],[school.coachPhone||""]].forEach((item,idx) => {
+          const td = document.createElement("td");
+          if (idx===5) td.className = "location-cell";
+          td.textContent = item[0];
+          tr.appendChild(td);
+        });
+
+        const deleteTd = document.createElement("td");
+        const delBtn = document.createElement("button");
+        delBtn.type = "button"; delBtn.className = "btn danger small"; delBtn.textContent = "Delete";
+        delBtn.addEventListener("click", async e => { e.stopPropagation(); if (confirm(`Delete ${school.name}?`)) await deleteSchool(school.id); });
+        deleteTd.appendChild(delBtn); tr.appendChild(deleteTd);
+
+        tr.addEventListener("click", e => {
+          if (e.target.closest("textarea, button, input, a")) return;
+          toggleRowDetail(school.id, tr);
+        });
+        tbodyEl.appendChild(tr);
+
+        if (expandedIds.has(school.id)) {
+          const detailRow = createDetailRow(school);
+          detailRow.classList.add("open");
+          tbodyEl.appendChild(detailRow);
+        }
+      });
+    }
+
+    // ── Detail panel ───────────────────────────────────────────────────────
+    function renderDetailInto(school, container) {
+      const noteId   = "dn-" + school.id;
+      const footerId = "df-" + school.id;
+      container.innerHTML = `
+        <div class="detail-header">
+          <div><h2>${escapeHtml(school.name)}</h2><div class="detail-meta">${escapeHtml(school.division)} • ${escapeHtml(school.conference||"Conference TBD")} • ${escapeHtml(getLocation(school))}</div></div>
+          <div><span class="pill">${school.division==="DI"?"Division I":"Division III"}</span><span class="pill">Hockey rank: ${escapeHtml(school.hockeyRankLabel||school.hockeyRank||"N/A")}</span></div>
+        </div>
+        <div class="detail-grid">
+          <div><div class="detail-block-title">Hockey Program</div><div class="detail-block-text">${escapeHtml(school.division)} • ${escapeHtml(school.conference||"TBD")} • Rank: ${escapeHtml(school.hockeyRankLabel||school.hockeyRank||"N/A")}</div></div>
+          <div><div class="detail-block-title">Academics &amp; Journalism</div><div class="detail-block-text">${escapeHtml(school.journalismStrength||"To be researched.")}</div></div>
+          <div><div class="detail-block-title">Coach &amp; Contact</div><div class="detail-block-text"><strong>${escapeHtml(school.coachType||"Head Coach")}:</strong> ${escapeHtml(school.headCoach||"To be added")}<br/><strong>Email:</strong> ${escapeHtml(school.coachEmail||"To be added")}<br/><strong>Phone:</strong> ${escapeHtml(school.coachPhone||"To be added")}</div></div>
+        </div>
+        ${school.description?`<div class="detail-about"><strong>About this school:</strong> ${escapeHtml(school.description)}</div>`:""}
+        <div class="detail-notes"><strong>My Notes:</strong><textarea id="${noteId}" placeholder="Add your notes here…">${escapeHtml(school.notes||"")}</textarea></div>
+        <div class="detail-footer" id="${footerId}"></div>`;
+
+      container.querySelector("#"+noteId).addEventListener("input", function() {
+        const target = schools.find(s => s.id === school.id);
+        if (target) { target.notes = this.value; cloudSave(target); }
+      });
+
+      const footer = container.querySelector("#"+footerId);
+      if (school.website) {
+        const a = document.createElement("a"); a.className="btn secondary"; a.textContent="Hockey Program"; a.target="_blank"; a.rel="noopener noreferrer"; a.href=school.website; footer.appendChild(a);
+      }
+      if (school.mainWebsite) {
+        const a = document.createElement("a"); a.className="btn secondary"; a.textContent="School Website"; a.target="_blank"; a.rel="noopener noreferrer"; a.href=school.mainWebsite; footer.appendChild(a);
+      }
+      const favBtn = document.createElement("button"); favBtn.type="button"; favBtn.className="btn secondary"; favBtn.textContent=school.isFavorite?"Remove from Favorites":"Add to Favorites";
+      favBtn.addEventListener("click", () => { toggleFavorite(school.id); renderDetailInto(schools.find(s=>s.id===school.id), container); });
+      footer.appendChild(favBtn);
+      const editBtn = document.createElement("button"); editBtn.type="button"; editBtn.className="btn secondary"; editBtn.textContent="Edit Coach Info";
+      editBtn.addEventListener("click", () => renderCoachEditForm(school, container));
+      footer.appendChild(editBtn);
+      const delBtn = document.createElement("button"); delBtn.type="button"; delBtn.className="btn danger"; delBtn.textContent="Delete School";
+      delBtn.addEventListener("click", async () => { if (confirm(`Delete ${school.name}?`)) await deleteSchool(school.id); });
+      footer.appendChild(delBtn);
+    }
+
+    function renderCoachEditForm(school, container) {
+      renderDetailInto(school, container);
+      const p = "ce-" + school.id + "-";
+      const form = document.createElement("div");
+      form.className = "coach-edit-form";
+      form.innerHTML = `
+        <div class="detail-block-title">Update Coach Information</div>
+        <div class="filter-group"><label for="${p}t">Coach Type</label><select id="${p}t"><option value="Head Coach" ${(school.coachType||"Head Coach")==="Head Coach"?"selected":""}>Head Coach</option><option value="Assistant Coach" ${(school.coachType||"")==="Assistant Coach"?"selected":""}>Assistant Coach</option></select></div>
+        <div class="filter-group"><label for="${p}n">Coach Name</label><input type="text" id="${p}n" value="${escapeHtml(school.headCoach||"")}" /></div>
+        <div class="filter-group"><label for="${p}e">Email</label><input type="email" id="${p}e" value="${escapeHtml(school.coachEmail||"")}" /></div>
+        <div class="filter-group"><label for="${p}p">Phone</label><input type="tel" id="${p}p" value="${escapeHtml(school.coachPhone||"")}" /></div>
+        <div class="coach-edit-actions"><button id="${p}s" class="btn small" type="button">Save</button><button id="${p}c" class="btn secondary small" type="button">Cancel</button></div>`;
+      container.appendChild(form);
+      form.querySelector("#"+p+"s").addEventListener("click", () => {
+        const target = schools.find(s => s.id === school.id);
+        if (target) {
+          target.coachType  = form.querySelector("#"+p+"t").value;
+          target.headCoach  = form.querySelector("#"+p+"n").value.trim();
+          target.coachEmail = form.querySelector("#"+p+"e").value.trim();
+          target.coachPhone = form.querySelector("#"+p+"p").value.trim();
+          cloudSave(target, 0);
+          buildConferenceOptions(); applyFilters();
+          renderDetailInto(target, container);
+        }
+      });
+      form.querySelector("#"+p+"c").addEventListener("click", () => renderDetailInto(school, container));
+    }
+
+    function createDetailRow(school) {
+      const tr = document.createElement("tr");
+      tr.className = "detail-row";
+      tr.dataset.detailId = school.id;
+      const td = document.createElement("td");
+      td.colSpan = 12;
+      const inner = document.createElement("div");
+      inner.className = "detail-row-inner";
+      const content = document.createElement("div");
+      content.className = "detail-row-content";
+      renderDetailInto(school, content);
+      inner.appendChild(content);
+      td.appendChild(inner);
+      tr.appendChild(td);
+      return tr;
+    }
+
+    function toggleRowDetail(schoolId, tr) {
+      if (expandedIds.has(schoolId)) {
+        expandedIds.delete(schoolId);
+        tr.classList.remove("expanded");
+        const detailRow = tbodyEl.querySelector(`tr[data-detail-id="${schoolId}"]`);
+        if (detailRow) {
+          detailRow.classList.remove("open");
+          setTimeout(() => detailRow.remove(), 300);
+        }
+      } else {
+        expandedIds.add(schoolId);
+        tr.classList.add("expanded");
+        const school = schools.find(s => s.id === schoolId);
+        if (!school) return;
+        const detailRow = createDetailRow(school);
+        tr.after(detailRow);
+        requestAnimationFrame(() => requestAnimationFrame(() => detailRow.classList.add("open")));
+      }
+    }
+
+    // ── Actions ────────────────────────────────────────────────────────────
+    function toggleFavorite(id) {
+      const s = schools.find(x=>x.id===id); if (!s) return;
+      s.isFavorite = !s.isFavorite;
+      cloudSave(s, 0);
+      applyFilters();
+    }
+    async function deleteSchool(id) {
+      schools = schools.filter(s=>s.id!==id);
+      expandedIds.delete(id);
+      buildConferenceOptions(); applyFilters();
+      setSyncStatus("saving");
+      try { await azDelete(id); setSyncStatus("synced"); }
+      catch(e) { console.warn("Delete from Azure failed", e); setSyncStatus("error"); }
+    }
+
+    // ── Add school form ────────────────────────────────────────────────────
+    document.getElementById("toggle-add-school").addEventListener("click", function() {
+      const open = document.getElementById("add-school-body").classList.toggle("open");
+      this.textContent = open ? "Hide form" : "Show form";
+    });
+    document.getElementById("add-submit").addEventListener("click", async () => {
+      const errEl = document.getElementById("add-error");
+      errEl.style.display = "none";
+      const name = document.getElementById("add-name").value.trim();
+      const division = document.getElementById("add-division").value;
+      if (!name || !division) { errEl.textContent = "School name and division are required."; errEl.style.display = "block"; return; }
+      const hockeyRankRaw = document.getElementById("add-hockeyRank").value.trim();
+      let hockeyRank = null, hockeyRankLabel = "";
+      if (hockeyRankRaw) { const n = parseFloat(hockeyRankRaw.replace("#","")); if (!isNaN(n)) { hockeyRank=n; hockeyRankLabel="#"+n; } else hockeyRankLabel=hockeyRankRaw; }
+      const idBase = name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") + "-" + division.toLowerCase();
+      let id = idBase || "school-"+Date.now(), counter = 1;
+      while (schools.some(s=>s.id===id)) id = idBase+"-"+counter++;
+      const newSchool = normalizeSchool({ id, name, division, _isCustom:true, conference:document.getElementById("add-conference").value.trim(), city:document.getElementById("add-city").value.trim(), state:document.getElementById("add-state").value.trim(), hockeyRank, hockeyRankLabel, journalismStrength:document.getElementById("add-journalism").value.trim(), coachType:document.getElementById("add-coachType").value, headCoach:document.getElementById("add-headCoach").value.trim(), coachEmail:document.getElementById("add-coachEmail").value.trim(), coachPhone:document.getElementById("add-coachPhone").value.trim(), notes:document.getElementById("add-notes").value.trim(), description:"", website:document.getElementById("add-website").value.trim(), mainWebsite:document.getElementById("add-mainWebsite").value.trim(), isFavorite:false });
+      schools.push(newSchool);
+      cloudSave(newSchool, 0);
+      buildConferenceOptions(); applyFilters();
+      ["add-name","add-division","add-conference","add-city","add-state","add-hockeyRank","add-journalism","add-coachType","add-headCoach","add-coachEmail","add-coachPhone","add-notes","add-website","add-mainWebsite"].forEach(fid => { const el=document.getElementById(fid); if(el) el.value=""; });
+    });
+
+    // ── Reset ──────────────────────────────────────────────────────────────
+    document.getElementById("reset-data").addEventListener("click", async () => {
+      if (!confirm("Reset all data — favorites, notes, and coach contacts — back to defaults?")) return;
+      setSyncStatus("saving");
+      try {
+        const entities = await azFetchAll();
+        await Promise.all(entities.map(e => azDelete(e.RowKey)));
+      } catch(e) { console.warn("Cloud reset partial failure", e); }
+      schools = JSON.parse(JSON.stringify(initialSchools)).map(normalizeSchool);
+      expandedIds = new Set();
+      buildConferenceOptions(); applyFilters();
+      setSyncStatus("synced");
+    });
+
+    // ── Export / Import ────────────────────────────────────────────────────
+    document.getElementById("export-data").addEventListener("click", () => {
+      const payload = { exportedAt: new Date().toISOString(), version:2, schools: schools.map(s=>({ id:s.id, notes:s.notes, isFavorite:s.isFavorite, headCoach:s.headCoach, coachEmail:s.coachEmail, coachPhone:s.coachPhone, coachType:s.coachType })) };
+      const blob = new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href=url; a.download="sophia-hockey-data-"+new Date().toISOString().slice(0,10)+".json"; a.click();
+      URL.revokeObjectURL(url);
+    });
+    document.getElementById("import-trigger").addEventListener("click", () => document.getElementById("import-file").click());
+    document.getElementById("import-file").addEventListener("change", async function() {
+      const file = this.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async e => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!data.schools||!Array.isArray(data.schools)) throw new Error("Invalid format");
+          const toSave = [];
+          data.schools.forEach(imp => {
+            const target = schools.find(s=>s.id===imp.id);
+            if (target) {
+              if (imp.notes!==undefined)      target.notes=imp.notes;
+              if (imp.isFavorite!==undefined) target.isFavorite=!!imp.isFavorite;
+              if (imp.headCoach!==undefined)  target.headCoach=imp.headCoach;
+              if (imp.coachEmail!==undefined) target.coachEmail=imp.coachEmail;
+              if (imp.coachPhone!==undefined) target.coachPhone=imp.coachPhone;
+              if (imp.coachType!==undefined)  target.coachType=imp.coachType;
+              toSave.push(target);
+            }
+          });
+          setSyncStatus("saving");
+          try { await Promise.all(toSave.map(s=>azUpsert(s))); setSyncStatus("synced"); } catch(err) { setSyncStatus("error"); }
+          buildConferenceOptions(); applyFilters();
+          alert(`Imported data for ${toSave.length} school(s).`);
+        } catch(err) { alert("Could not import: "+err.message); }
+        this.value = "";
+      };
+      reader.readAsText(file);
+    });
+
+    // ── Column sort ────────────────────────────────────────────────────────
+    const headerCells = document.querySelectorAll("thead th.sortable");
+    function updateHeaderIndicators() {
+      headerCells.forEach(th => { th.classList.remove("active-sort"); const ind=th.querySelector(".sort-indicator"); if(ind) ind.textContent=""; if(th.dataset.col===sortState.column){th.classList.add("active-sort"); if(ind) ind.textContent=sortState.direction==="asc"?"▲":"▼";}});
+    }
+    headerCells.forEach(th => th.addEventListener("click", e => {
+      if (e.target.classList.contains("col-resizer")) return;
+      const col = th.dataset.col;
+      sortState = sortState.column===col ? {column:col,direction:sortState.direction==="asc"?"desc":"asc"} : {column:col,direction:"asc"};
+      filterSortEl.value = "";
+      renderTable(sortList(getCurrentFiltered(), sortState.column, sortState.direction));
+      updateHeaderIndicators(); loadColumnWidths();
+    }));
+
+    // ── Column resize ──────────────────────────────────────────────────────
+    function loadColumnWidths() { try { const raw=localStorage.getItem(COLUMN_WIDTHS_KEY); if(!raw) return; const widths=JSON.parse(raw); const table=document.querySelector("table"); [table.tHead.rows[0],...table.tBodies[0].rows].forEach(row=>{for(let i=0;i<row.cells.length;i++) if(widths[i]) row.cells[i].style.width=widths[i]+"px";}); } catch(e){} }
+    function saveColumnWidths() { try { const hr=document.querySelector("table").tHead.rows[0]; const w=[]; for(let i=0;i<hr.cells.length;i++) w.push(Math.round(hr.cells[i].getBoundingClientRect().width)); localStorage.setItem(COLUMN_WIDTHS_KEY,JSON.stringify(w)); } catch(e){} }
+    document.querySelectorAll(".col-resizer").forEach(resizer => {
+      resizer.addEventListener("mousedown", e => {
+        e.preventDefault();
+        const idx=parseInt(resizer.dataset.colIndex,10), table=document.querySelector("table"), hr=table.tHead.rows[0], startX=e.pageX, startW=hr.cells[idx].getBoundingClientRect().width;
+        const onMove = ev => { const nw=Math.max(60,startW+ev.pageX-startX); hr.cells[idx].style.width=nw+"px"; Array.from(table.tBodies[0].rows).forEach(r=>{if(r.cells[idx]) r.cells[idx].style.width=nw+"px";}); };
+        const onUp = () => { document.removeEventListener("mousemove",onMove); document.removeEventListener("mouseup",onUp); saveColumnWidths(); };
+        document.addEventListener("mousemove",onMove); document.addEventListener("mouseup",onUp);
+      });
+    });
+
+    // ── Filter panel collapse ──────────────────────────────────────────────
+    const leftPanelEl     = document.getElementById("left-panel");
+    const panelCollapseBtn= document.getElementById("panel-collapse-btn");
+    const filterShowTab   = document.getElementById("filter-show-tab");
+    function setPanelCollapsed(collapsed) {
+      leftPanelEl.classList.toggle("collapsed", collapsed);
+      filterShowTab.style.display = (collapsed && !isMobile()) ? "block" : "none";
+      try { localStorage.setItem(FILTERS_HIDDEN_KEY, JSON.stringify(collapsed)); } catch(e){}
+    }
+    panelCollapseBtn.addEventListener("click", () => setPanelCollapsed(true));
+    filterShowTab.addEventListener("click", () => setPanelCollapsed(false));
+    function loadFiltersHidden() { try { const raw=localStorage.getItem(FILTERS_HIDDEN_KEY); if(raw) setPanelCollapsed(!!JSON.parse(raw)); } catch(e){} }
+
+    // ── Mobile cards ───────────────────────────────────────────────────────
+    const mobileCardsEl   = document.getElementById("mobile-cards");
+    const mobileCardsEmpty= document.getElementById("mobile-cards-empty");
+    const mobileOverlayEl = document.getElementById("mobile-overlay");
+    const mobileOverlayTitle = document.getElementById("mobile-overlay-title");
+    const mobileOverlayBody  = document.getElementById("mobile-overlay-body");
+    const mobileCountEl   = document.getElementById("mobile-count");
+    const mobileDrawerBackdrop = document.getElementById("mobile-drawer-backdrop");
+
+    function isMobile() { return window.innerWidth <= 768; }
+
+    function renderMobileCards(list) {
+      // Remove existing cards (not the empty msg)
+      Array.from(mobileCardsEl.children).forEach(c => { if (c.id !== "mobile-cards-empty") c.remove(); });
+      mobileCountEl.textContent = list.length + " school" + (list.length !== 1 ? "s" : "");
+      if (!list.length) { mobileCardsEmpty.style.display = "block"; return; }
+      mobileCardsEmpty.style.display = "none";
+      list.forEach(school => {
+        const card = document.createElement("div");
+        card.className = "mobile-card";
+        const coachLabel = school.headCoach ? `<div class="mobile-card-coach">${escapeHtml(school.coachType||"Head Coach")}: <strong>${escapeHtml(school.headCoach)}</strong></div>` : "";
+        const emailLink = school.coachEmail ? `<a href="mailto:${escapeHtml(school.coachEmail)}">${escapeHtml(school.coachEmail)}</a>` : "";
+        const phoneLink = school.coachPhone ? `<a href="tel:${escapeHtml(school.coachPhone)}">${escapeHtml(school.coachPhone)}</a>` : "";
+        const contact = (emailLink||phoneLink) ? `<div class="mobile-card-contact">${emailLink}${phoneLink}</div>` : "";
+        card.innerHTML = `
+          <div class="mobile-card-main">
+            <div class="mobile-card-name">${escapeHtml(school.name)}</div>
+            <div class="mobile-card-meta">${escapeHtml(school.division)} • ${escapeHtml(school.conference||"TBD")} • Rank: ${escapeHtml(school.hockeyRankLabel||school.hockeyRank||"N/A")}</div>
+            ${coachLabel}${contact}
+          </div>
+          <span class="mobile-card-star${school.isFavorite?" favorite":""}" data-id="${escapeHtml(school.id)}">★</span>`;
+        card.querySelector(".mobile-card-star").addEventListener("click", e => {
+          e.stopPropagation();
+          toggleFavorite(school.id);
+        });
+        card.addEventListener("click", () => showMobileOverlay(school.id));
+        mobileCardsEl.appendChild(card);
+      });
+    }
+
+    function showMobileOverlay(schoolId) {
+      const school = schools.find(s => s.id === schoolId);
+      if (!school) return;
+      mobileOverlayTitle.textContent = school.name;
+      renderMobileDetail(school);
+      mobileOverlayEl.classList.add("open");
+      document.body.style.overflow = "hidden";
+    }
+
+    function hideMobileOverlay() {
+      mobileOverlayEl.classList.remove("open");
+      document.body.style.overflow = "";
+    }
+
+    function renderMobileDetail(school) {
+      mobileOverlayBody.innerHTML = `
+        <div class="detail-header">
+          <div><h2>${escapeHtml(school.name)}</h2><div class="detail-meta">${escapeHtml(school.division)} • ${escapeHtml(school.conference||"Conference TBD")} • ${escapeHtml(getLocation(school))}</div></div>
+          <div><span class="pill">${school.division==="DI"?"Division I":"Division III"}</span><span class="pill">Rank: ${escapeHtml(school.hockeyRankLabel||school.hockeyRank||"N/A")}</span></div>
+        </div>
+        <div class="detail-grid" style="margin-top:0.75rem;">
+          <div><div class="detail-block-title">Hockey Program</div><div class="detail-block-text">${escapeHtml(school.division)} • ${escapeHtml(school.conference||"TBD")} • Rank: ${escapeHtml(school.hockeyRankLabel||school.hockeyRank||"N/A")}</div></div>
+          <div><div class="detail-block-title">Academics &amp; Journalism</div><div class="detail-block-text">${escapeHtml(school.journalismStrength||"To be researched.")}</div></div>
+          <div><div class="detail-block-title">Coach &amp; Contact</div><div class="detail-block-text"><strong>${escapeHtml(school.coachType||"Head Coach")}:</strong> ${escapeHtml(school.headCoach||"To be added")}<br/>${school.coachEmail?`<a href="mailto:${escapeHtml(school.coachEmail)}">${escapeHtml(school.coachEmail)}</a>`:"<span style='color:var(--text-muted)'>No email yet</span>"}<br/>${school.coachPhone?`<a href="tel:${escapeHtml(school.coachPhone)}">${escapeHtml(school.coachPhone)}</a>`:"<span style='color:var(--text-muted)'>No phone yet</span>"}</div></div>
+        </div>
+        ${school.description?`<div class="detail-about"><strong>About this school:</strong> ${escapeHtml(school.description)}</div>`:""}
+        <div class="detail-notes" style="margin-top:0.75rem;"><strong>My Notes:</strong><textarea id="mobile-detail-notes" placeholder="Add your notes here…" style="width:100%;min-height:80px;margin-top:0.35rem;font-size:0.85rem;resize:vertical;">${escapeHtml(school.notes||"")}</textarea></div>
+        <div class="detail-footer" id="mobile-detail-footer" style="margin-top:0.75rem;flex-wrap:wrap;gap:0.5rem;display:flex;"></div>`;
+
+      document.getElementById("mobile-detail-notes").addEventListener("input", function() {
+        const target = schools.find(s => s.id === school.id);
+        if (target) { target.notes = this.value; cloudSave(target); }
+      });
+
+      const footer = document.getElementById("mobile-detail-footer");
+      if (school.website) {
+        const a = document.createElement("a"); a.className="btn secondary small"; a.textContent="Hockey Program"; a.target="_blank"; a.rel="noopener noreferrer"; a.href=school.website; footer.appendChild(a);
+      }
+      if (school.mainWebsite) {
+        const a = document.createElement("a"); a.className="btn secondary small"; a.textContent="School Website"; a.target="_blank"; a.rel="noopener noreferrer"; a.href=school.mainWebsite; footer.appendChild(a);
+      }
+      const favBtn = document.createElement("button"); favBtn.type="button"; favBtn.className="btn secondary small"; favBtn.textContent=school.isFavorite?"★ Unfavorite":"☆ Favorite";
+      favBtn.addEventListener("click", () => { toggleFavorite(school.id); renderMobileDetail(schools.find(s=>s.id===school.id)); });
+      footer.appendChild(favBtn);
+      const editBtn = document.createElement("button"); editBtn.type="button"; editBtn.className="btn secondary small"; editBtn.textContent="Edit Coach";
+      editBtn.addEventListener("click", () => renderMobileCoachEditForm(school));
+      footer.appendChild(editBtn);
+    }
+
+    function renderMobileCoachEditForm(school) {
+      renderMobileDetail(school);
+      const form = document.createElement("div");
+      form.className = "coach-edit-form";
+      form.innerHTML = `
+        <div class="detail-block-title">Update Coach Information</div>
+        <div class="filter-group"><label for="mcet">Coach Type</label><select id="mcet"><option value="Head Coach" ${(school.coachType||"Head Coach")==="Head Coach"?"selected":""}>Head Coach</option><option value="Assistant Coach" ${(school.coachType||"")==="Assistant Coach"?"selected":""}>Assistant Coach</option></select></div>
+        <div class="filter-group"><label for="mcen">Coach Name</label><input type="text" id="mcen" value="${escapeHtml(school.headCoach||"")}" /></div>
+        <div class="filter-group"><label for="mcee">Email</label><input type="email" id="mcee" value="${escapeHtml(school.coachEmail||"")}" /></div>
+        <div class="filter-group"><label for="mcep">Phone</label><input type="tel" id="mcep" value="${escapeHtml(school.coachPhone||"")}" /></div>
+        <div class="coach-edit-actions"><button id="mces" class="btn small" type="button">Save</button><button id="mcec" class="btn secondary small" type="button">Cancel</button></div>`;
+      mobileOverlayBody.appendChild(form);
+      form.querySelector("#mces").addEventListener("click", async () => {
+        const target = schools.find(s => s.id === school.id);
+        if (target) {
+          target.coachType  = form.querySelector("#mcet").value;
+          target.headCoach  = form.querySelector("#mcen").value.trim();
+          target.coachEmail = form.querySelector("#mcee").value.trim();
+          target.coachPhone = form.querySelector("#mcep").value.trim();
+          cloudSave(target, 0);
+          buildConferenceOptions(); applyFilters();
+          renderMobileDetail(target);
+          mobileOverlayTitle.textContent = target.name;
+        }
+      });
+      form.querySelector("#mcec").addEventListener("click", () => renderMobileDetail(school));
+    }
+
+    // Mobile filter drawer
+    function openMobileDrawer() {
+      leftPanelEl.classList.add("mobile-drawer-open");
+      leftPanelEl.classList.remove("collapsed");
+      filterShowTab.style.display = "none";
+      mobileDrawerBackdrop.classList.add("open");
+      document.body.style.overflow = "hidden";
+    }
+    function closeMobileDrawer() {
+      leftPanelEl.classList.remove("mobile-drawer-open");
+      mobileDrawerBackdrop.classList.remove("open");
+      if (!mobileOverlayEl.classList.contains("open")) document.body.style.overflow = "";
+    }
+
+    document.getElementById("mobile-filter-btn").addEventListener("click", openMobileDrawer);
+    mobileDrawerBackdrop.addEventListener("click", closeMobileDrawer);
+    document.getElementById("mobile-back-btn").addEventListener("click", hideMobileOverlay);
+
+    filterDiEl.addEventListener("change", applyFilters);
+    filterDiiiEl.addEventListener("change", applyFilters);
+    filterConferenceEl.addEventListener("change", applyFilters);
+    filterSearchEl.addEventListener("input", applyFilters);
+    filterSortEl.addEventListener("change", applyFilters);
+    filterFavoritesEl.addEventListener("change", applyFilters);
+
+    // ── App initialization ─────────────────────────────────────────────────
+    async function init() {
+      try {
+        const entities = await azFetchAll();
+        schools = mergeEntitiesWithInitial(entities);
+        setSyncStatus("synced");
+      } catch(err) {
+        console.warn("Could not load from Azure, using defaults", err);
+        schools = JSON.parse(JSON.stringify(initialSchools)).map(normalizeSchool);
+        setSyncStatus("offline");
+      }
+      document.getElementById("loading-overlay").classList.add("hidden");
+      buildConferenceOptions();
+      applyFilters();
+      loadFiltersHidden();
+    }
+
+    let _resizeTimer;
+    window.addEventListener("resize", () => {
+      clearTimeout(_resizeTimer);
+      _resizeTimer = setTimeout(applyFilters, 150);
+    });
+
+    init();
+  </script>
 </body>
 </html>
