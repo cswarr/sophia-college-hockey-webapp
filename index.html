@@ -262,6 +262,7 @@
         <div class="filter-group"><label for="filter-search">Search (school, city, state, coach, email, phone, notes)</label><input type="text" id="filter-search" placeholder="e.g., Wisconsin, Boston, Minnesota" /></div>
         <div class="filter-group"><label for="filter-sort">Sort preset</label><select id="filter-sort"><option value="hockeyRank">Hockey Rank (best first)</option><option value="name">School Name (A–Z)</option><option value="ivyLeague">Ivy League Schools</option></select></div>
         <div class="filter-group"><div class="checkbox-row"><input type="checkbox" id="filter-favorites" /><label for="filter-favorites">Show favorites only</label></div></div>
+        <button id="clear-filters" class="btn secondary small" type="button" style="width:100%;margin-bottom:0.5rem;">✕ Clear Filters</button>
         <button id="reset-data" class="btn secondary small" type="button">Reset saved data</button>
         <div class="status-line">Data is synced to the cloud automatically.</div>
       </div>
@@ -504,12 +505,18 @@
     }
 
     // ── Filter / sort / render ─────────────────────────────────────────────
+    const STATE_FULL = {"AL":"Alabama","AK":"Alaska","AZ":"Arizona","AR":"Arkansas","CA":"California","CO":"Colorado","CT":"Connecticut","DE":"Delaware","FL":"Florida","GA":"Georgia","HI":"Hawaii","ID":"Idaho","IL":"Illinois","IN":"Indiana","IA":"Iowa","KS":"Kansas","KY":"Kentucky","LA":"Louisiana","ME":"Maine","MD":"Maryland","MA":"Massachusetts","MI":"Michigan","MN":"Minnesota","MS":"Mississippi","MO":"Missouri","MT":"Montana","NE":"Nebraska","NV":"Nevada","NH":"New Hampshire","NJ":"New Jersey","NM":"New Mexico","NY":"New York","NC":"North Carolina","ND":"North Dakota","OH":"Ohio","OK":"Oklahoma","OR":"Oregon","PA":"Pennsylvania","RI":"Rhode Island","SC":"South Carolina","SD":"South Dakota","TN":"Tennessee","TX":"Texas","UT":"Utah","VT":"Vermont","VA":"Virginia","WA":"Washington","WV":"West Virginia","WI":"Wisconsin","WY":"Wyoming"};
+    function buildSearchText(s) {
+      const stateFull = STATE_FULL[(s.state||"").toUpperCase()] || "";
+      const divAlt = s.division === "DI" ? "division i division 1 d1" : s.division === "DIII" ? "division iii division 3 d3" : "";
+      return [s.name,s.city,s.state,stateFull,s.conference,s.journalismStrength,s.headCoach,s.coachEmail,s.coachPhone,s.notes,s.description,divAlt].join(" ").toLowerCase();
+    }
     function applyFilters() {
       let filtered = schools.slice();
       filtered = filtered.filter(s => !(s.division === "DI" && !filterDiEl.checked) && !(s.division === "DIII" && !filterDiiiEl.checked));
       if (filterConferenceEl.value) filtered = filtered.filter(s => s.conference === filterConferenceEl.value);
       const search = filterSearchEl.value.trim().toLowerCase();
-      if (search) filtered = filtered.filter(s => [s.name,s.city,s.state,s.conference,s.journalismStrength,s.headCoach,s.coachEmail,s.coachPhone,s.notes,s.description].join(" ").toLowerCase().includes(search));
+      if (search) filtered = filtered.filter(s => buildSearchText(s).includes(search));
       if (filterFavoritesEl.checked) filtered = filtered.filter(s => s.isFavorite);
       const IVY_NAMES = ["Harvard","Yale","Princeton","Columbia","Cornell","Dartmouth","Brown","Pennsylvania"];
       const preset = filterSortEl.value;
@@ -537,7 +544,7 @@
       filtered = filtered.filter(s => !(s.division==="DI"&&!filterDiEl.checked) && !(s.division==="DIII"&&!filterDiiiEl.checked));
       if (filterConferenceEl.value) filtered = filtered.filter(s => s.conference===filterConferenceEl.value);
       const search = filterSearchEl.value.trim().toLowerCase();
-      if (search) filtered = filtered.filter(s => [s.name,s.city,s.state,s.conference,s.journalismStrength,s.headCoach,s.coachEmail,s.coachPhone,s.notes,s.description].join(" ").toLowerCase().includes(search));
+      if (search) filtered = filtered.filter(s => buildSearchText(s).includes(search));
       if (filterFavoritesEl.checked) filtered = filtered.filter(s => s.isFavorite);
       return filtered;
     }
@@ -592,7 +599,7 @@
       const footerId = "df-" + school.id;
       container.innerHTML = `
         <div class="detail-header">
-          <div><h2>${escapeHtml(school.name)}</h2><div class="detail-meta">${escapeHtml(school.division)} • ${escapeHtml(school.conference||"Conference TBD")} • ${escapeHtml(getLocation(school))}</div></div>
+          <div><h2>${escapeHtml(school.name)}</h2></div>
           <div><span class="pill">${school.division==="DI"?"Division I":"Division III"}</span><span class="pill">Hockey rank: ${escapeHtml(school.hockeyRankLabel||school.hockeyRank||"N/A")}</span></div>
         </div>
         <div class="detail-grid">
@@ -748,10 +755,13 @@
 
     // ── Export / Import ────────────────────────────────────────────────────
     document.getElementById("export-data").addEventListener("click", () => {
-      const payload = { exportedAt: new Date().toISOString(), version:2, schools: schools.map(s=>({ id:s.id, notes:s.notes, isFavorite:s.isFavorite, headCoach:s.headCoach, coachEmail:s.coachEmail, coachPhone:s.coachPhone, coachType:s.coachType })) };
-      const blob = new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+      const headers = ["School","Division","Conference","City","State","Hockey Rank","School Highlights","Head Coach","Coach Type","Coach Email","Coach Phone","Hockey Program Website","School Website","Notes","Favorite"];
+      const rows = schools.map(s => [s.name,s.division,s.conference||"",s.city||"",s.state||"",s.hockeyRankLabel||s.hockeyRank||"",s.journalismStrength||"",s.headCoach||"",s.coachType||"",s.coachEmail||"",s.coachPhone||"",s.hockeyWebsite||"",s.mainWebsite||"",s.notes||"",s.isFavorite?"Yes":"No"]);
+      function csvCell(v) { const s=String(v); return (s.includes(",")||s.includes('"')||s.includes("\n")) ? '"'+s.replace(/"/g,'""')+'"' : s; }
+      const csv = [headers, ...rows].map(r => r.map(csvCell).join(",")).join("\r\n");
+      const blob = new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8;"});
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href=url; a.download="sophia-hockey-data-"+new Date().toISOString().slice(0,10)+".json"; a.click();
+      const a = document.createElement("a"); a.href=url; a.download="women-college-hockey-"+new Date().toISOString().slice(0,10)+".csv"; a.click();
       URL.revokeObjectURL(url);
     });
     document.getElementById("import-trigger").addEventListener("click", () => document.getElementById("import-file").click());
@@ -882,7 +892,7 @@
     function renderMobileDetail(school) {
       mobileOverlayBody.innerHTML = `
         <div class="detail-header">
-          <div><h2>${escapeHtml(school.name)}</h2><div class="detail-meta">${escapeHtml(school.division)} • ${escapeHtml(school.conference||"Conference TBD")} • ${escapeHtml(getLocation(school))}</div></div>
+          <div><h2>${escapeHtml(school.name)}</h2></div>
           <div><span class="pill">${school.division==="DI"?"Division I":"Division III"}</span><span class="pill">Rank: ${escapeHtml(school.hockeyRankLabel||school.hockeyRank||"N/A")}</span></div>
         </div>
         <div class="detail-grid" style="margin-top:0.75rem;">
@@ -964,6 +974,13 @@
     filterDiiiEl.addEventListener("change", applyFilters);
     filterConferenceEl.addEventListener("change", applyFilters);
     filterSearchEl.addEventListener("input", applyFilters);
+    document.getElementById("clear-filters").addEventListener("click", () => {
+      filterDiEl.checked = true; filterDiiiEl.checked = true;
+      filterConferenceEl.value = ""; filterSearchEl.value = "";
+      filterFavoritesEl.checked = false; filterSortEl.value = "hockeyRank";
+      sortState = { column:"hockeyRank", direction:"asc" };
+      applyFilters();
+    });
     filterSortEl.addEventListener("change", applyFilters);
     filterFavoritesEl.addEventListener("change", applyFilters);
 
