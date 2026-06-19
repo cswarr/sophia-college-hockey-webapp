@@ -122,6 +122,22 @@
     #loading-overlay.hidden { display: none; }
     .spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Confirmation modal ──────────────────────────────────────────────── */
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 800; display: flex; align-items: center; justify-content: center; }
+    .modal-backdrop.hidden { display: none; }
+    .modal-box { background: #fff; border-radius: 0.85rem; padding: 1.75rem; max-width: 420px; width: 90%; box-shadow: 0 25px 60px rgba(0,0,0,0.25); }
+    .modal-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .modal-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.4rem; color: var(--text-main); }
+    .modal-body { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 0.5rem; }
+
+    /* ── Toast notifications ─────────────────────────────────────────────── */
+    #toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 700; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
+    .toast { background: #1e293b; color: #fff; padding: 0.55rem 1rem; border-radius: 0.5rem; font-size: 0.84rem; font-weight: 500; opacity: 0; transform: translateY(6px); transition: opacity 0.22s ease, transform 0.22s ease; min-width: 155px; text-align: center; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    @media (max-width: 768px) { #toast-container { right: auto; left: 50%; transform: translateX(-50%); bottom: 1rem; } }
+
     @media (max-width: 900px) { header { padding: 1rem; } main { padding: 1rem; } table { font-size: 0.8rem; } }
 
     /* ── Mobile layout (≤768px) ──────────────────────────────────────────── */
@@ -214,6 +230,23 @@
 </head>
 <body>
   <div id="loading-overlay"><div class="spinner"></div><span>Loading from cloud…</span></div>
+
+  <!-- Confirmation modal -->
+  <div class="modal-backdrop hidden" id="app-modal">
+    <div class="modal-box">
+      <div class="modal-icon" id="modal-icon"></div>
+      <div class="modal-title" id="modal-title"></div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-footer">
+        <button id="modal-cancel" class="btn secondary">Cancel</button>
+        <button id="modal-confirm" class="btn danger">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container"></div>
+
   <button class="filter-show-tab" id="filter-show-tab" title="Show filters">▶</button>
 
   <header>
@@ -476,7 +509,7 @@
         delete _pendingSaves[school.id];
         try {
           await azUpsert(school);
-          if (!Object.keys(_pendingSaves).length) setSyncStatus("synced");
+          if (!Object.keys(_pendingSaves).length) { setSyncStatus("synced"); showToast("✓ Changes saved"); }
         } catch (err) {
           console.warn("Cloud save failed", school.id, err);
           setSyncStatus("error");
@@ -487,6 +520,32 @@
     // ── UI helpers ─────────────────────────────────────────────────────────
     function escapeHtml(v) { return String(v ?? "").replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c])); }
     function getLocation(s) { return (s.city || "") + (s.city && s.state ? ", " : "") + (s.state || ""); }
+
+    // ── Modal ──────────────────────────────────────────────────────────────
+    function showModal({ icon = "⚠️", title, body, confirmLabel = "Confirm", confirmClass = "danger", onConfirm }) {
+      document.getElementById("modal-icon").textContent = icon;
+      document.getElementById("modal-title").textContent = title;
+      document.getElementById("modal-body").textContent = body;
+      const confirmBtn = document.getElementById("modal-confirm");
+      confirmBtn.textContent = confirmLabel;
+      confirmBtn.className = "btn " + confirmClass;
+      confirmBtn.onclick = () => { closeModal(); onConfirm(); };
+      document.getElementById("modal-cancel").onclick = closeModal;
+      document.getElementById("app-modal").classList.remove("hidden");
+    }
+    function closeModal() { document.getElementById("app-modal").classList.add("hidden"); }
+    document.getElementById("app-modal").addEventListener("click", e => { if (e.target === document.getElementById("app-modal")) closeModal(); });
+
+    // ── Toast ──────────────────────────────────────────────────────────────
+    function showToast(msg, duration = 2500) {
+      const container = document.getElementById("toast-container");
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.textContent = msg;
+      container.appendChild(toast);
+      requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add("show")));
+      setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 250); }, duration);
+    }
 
     const filterDiEl        = document.getElementById("filter-di");
     const filterDiiiEl      = document.getElementById("filter-diii");
@@ -576,7 +635,7 @@
         const deleteTd = document.createElement("td");
         const delBtn = document.createElement("button");
         delBtn.type = "button"; delBtn.className = "btn danger small"; delBtn.textContent = "Delete";
-        delBtn.addEventListener("click", async e => { e.stopPropagation(); if (confirm(`Delete ${school.name}?`)) await deleteSchool(school.id); });
+        delBtn.addEventListener("click", e => { e.stopPropagation(); showModal({ icon:"🗑️", title:"Delete School", body:`Are you sure you want to delete ${school.name}? This cannot be undone.`, confirmLabel:"Delete", onConfirm:() => deleteSchool(school.id) }); });
         deleteTd.appendChild(delBtn); tr.appendChild(deleteTd);
 
         tr.addEventListener("click", e => {
@@ -630,7 +689,7 @@
       editBtn.addEventListener("click", () => renderCoachEditForm(school, container));
       footer.appendChild(editBtn);
       const delBtn = document.createElement("button"); delBtn.type="button"; delBtn.className="btn danger"; delBtn.textContent="Delete School";
-      delBtn.addEventListener("click", async () => { if (confirm(`Delete ${school.name}?`)) await deleteSchool(school.id); });
+      delBtn.addEventListener("click", () => { showModal({ icon:"🗑️", title:"Delete School", body:`Are you sure you want to delete ${school.name}? This cannot be undone.`, confirmLabel:"Delete", onConfirm:() => deleteSchool(school.id) }); });
       footer.appendChild(delBtn);
     }
 
@@ -740,17 +799,19 @@
     });
 
     // ── Reset ──────────────────────────────────────────────────────────────
-    document.getElementById("reset-data").addEventListener("click", async () => {
-      if (!confirm("Reset all data — favorites, notes, and coach contacts — back to defaults?")) return;
-      setSyncStatus("saving");
+    document.getElementById("reset-data").addEventListener("click", () => {
+      showModal({ icon:"⚠️", title:"Reset All Data", body:"This will permanently erase all favorites, notes, and coach contacts and restore everything to defaults. This cannot be undone.", confirmLabel:"Reset Everything", onConfirm: async () => {
+        setSyncStatus("saving");
       try {
         const entities = await azFetchAll();
         await Promise.all(entities.map(e => azDelete(e.RowKey)));
       } catch(e) { console.warn("Cloud reset partial failure", e); }
-      schools = JSON.parse(JSON.stringify(initialSchools)).map(normalizeSchool);
-      expandedIds = new Set();
-      buildConferenceOptions(); applyFilters();
-      setSyncStatus("synced");
+        schools = JSON.parse(JSON.stringify(initialSchools)).map(normalizeSchool);
+        expandedIds = new Set();
+        buildConferenceOptions(); applyFilters();
+        setSyncStatus("synced");
+        showToast("✓ Data reset to defaults");
+      }});
     });
 
     // ── Export / Import ────────────────────────────────────────────────────
