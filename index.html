@@ -140,6 +140,21 @@
 
     @media (max-width: 900px) { header { padding: 1rem; } main { padding: 1rem; } table { font-size: 0.8rem; } }
 
+    /* ── Search highlight ────────────────────────────────────────────────── */
+    mark.hl { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 1px; font-style: normal; }
+
+    /* ── Search clear button ─────────────────────────────────────────────── */
+    .search-wrap { position: relative; }
+    .search-wrap input { padding-right: 1.75rem; }
+    #search-clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 1rem; display: none; padding: 0; line-height: 1; }
+    #search-clear:hover { color: var(--text-main); }
+
+    /* ── Active filters bar ──────────────────────────────────────────────── */
+    #active-filters-bar { display: none; align-items: center; flex-wrap: wrap; gap: 0.4rem; padding: 0.5rem 0.75rem; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 0.5rem; font-size: 0.82rem; margin-bottom: 0.6rem; }
+    .filter-chip { display: inline-flex; align-items: center; background: var(--accent); color: #fff; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.78rem; font-weight: 500; }
+    #active-filters-bar .bar-clear-btn { margin-left: auto; background: none; border: 1px solid var(--accent); color: var(--accent); border-radius: 0.4rem; padding: 0.2rem 0.6rem; cursor: pointer; font-size: 0.78rem; white-space: nowrap; }
+    #active-filters-bar .bar-clear-btn:hover { background: var(--accent-soft); }
+
     /* ── Mobile layout (≤768px) ──────────────────────────────────────────── */
     .mobile-topbar { display: none; }
     #mobile-cards  { display: none; }
@@ -292,7 +307,7 @@
           </div>
         </div>
         <div class="filter-group"><label for="filter-conference">Conference</label><select id="filter-conference"><option value="">All conferences</option></select></div>
-        <div class="filter-group"><label for="filter-search">Search (school, city, state, coach, email, phone, notes)</label><input type="text" id="filter-search" placeholder="e.g., Wisconsin, Boston, Minnesota" /></div>
+        <div class="filter-group"><label for="filter-search">Search (school, city, state, coach, email, phone, notes)</label><div class="search-wrap"><input type="text" id="filter-search" placeholder="e.g., Wisconsin, Boston, Minnesota" /><button id="search-clear" title="Clear search">✕</button></div></div>
         <div class="filter-group"><label for="filter-sort">Sort preset</label><select id="filter-sort"><option value="hockeyRank">Hockey Rank (best first)</option><option value="name">School Name (A–Z)</option><option value="ivyLeague">Ivy League Schools</option></select></div>
         <div class="filter-group"><div class="checkbox-row"><input type="checkbox" id="filter-favorites" /><label for="filter-favorites">Show favorites only</label></div></div>
         <button id="clear-filters" class="btn secondary small" type="button" style="width:100%;margin-bottom:0.5rem;">✕ Clear Filters</button>
@@ -332,6 +347,7 @@
     <section class="panel right-panel">
       <div>
         <div class="section-title"><span>Schools</span></div>
+        <div id="active-filters-bar"></div>
         <div id="table-container">
           <table>
             <thead><tr>
@@ -563,6 +579,39 @@
       if (conferences.includes(cur)) filterConferenceEl.value = cur;
     }
 
+    // ── Search helpers ─────────────────────────────────────────────────────
+    function highlightText(raw, query) {
+      const escaped = escapeHtml(String(raw ?? ""));
+      if (!query) return escaped;
+      const safeQ = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return escaped.replace(new RegExp(safeQ, "gi"), m => `<mark class="hl">${m}</mark>`);
+    }
+
+    // ── Active filters bar ─────────────────────────────────────────────────
+    function clearAllFilters() {
+      filterDiEl.checked = true; filterDiiiEl.checked = true;
+      filterConferenceEl.value = ""; filterSearchEl.value = "";
+      filterFavoritesEl.checked = false; filterSortEl.value = "hockeyRank";
+      sortState = { column:"hockeyRank", direction:"asc" };
+      document.getElementById("search-clear").style.display = "none";
+      applyFilters();
+    }
+    function updateActiveFiltersBar() {
+      const bar = document.getElementById("active-filters-bar");
+      const chips = [];
+      if (filterDiEl.checked && !filterDiiiEl.checked)  chips.push("Division: DI only");
+      if (!filterDiEl.checked && filterDiiiEl.checked)  chips.push("Division: DIII only");
+      if (filterConferenceEl.value)                      chips.push(`Conference: ${filterConferenceEl.value}`);
+      if (filterSearchEl.value.trim())                   chips.push(`Search: "${filterSearchEl.value.trim()}"`);
+      if (filterFavoritesEl.checked)                     chips.push("Favorites only");
+      if (filterSortEl.value === "ivyLeague")            chips.push("Ivy League only");
+      if (!chips.length) { bar.style.display = "none"; return; }
+      bar.style.display = "flex";
+      bar.innerHTML = chips.map(c => `<span class="filter-chip">${escapeHtml(c)}</span>`).join("")
+        + `<button class="bar-clear-btn">✕ Clear all</button>`;
+      bar.querySelector(".bar-clear-btn").addEventListener("click", clearAllFilters);
+    }
+
     // ── Filter / sort / render ─────────────────────────────────────────────
     const STATE_FULL = {"AL":"Alabama","AK":"Alaska","AZ":"Arizona","AR":"Arkansas","CA":"California","CO":"Colorado","CT":"Connecticut","DE":"Delaware","FL":"Florida","GA":"Georgia","HI":"Hawaii","ID":"Idaho","IL":"Illinois","IN":"Indiana","IA":"Iowa","KS":"Kansas","KY":"Kentucky","LA":"Louisiana","ME":"Maine","MD":"Maryland","MA":"Massachusetts","MI":"Michigan","MN":"Minnesota","MS":"Mississippi","MO":"Missouri","MT":"Montana","NE":"Nebraska","NV":"Nevada","NH":"New Hampshire","NJ":"New Jersey","NM":"New Mexico","NY":"New York","NC":"North Carolina","ND":"North Dakota","OH":"Ohio","OK":"Oklahoma","OR":"Oregon","PA":"Pennsylvania","RI":"Rhode Island","SC":"South Carolina","SD":"South Dakota","TN":"Tennessee","TX":"Texas","UT":"Utah","VT":"Vermont","VA":"Virginia","WA":"Washington","WV":"West Virginia","WI":"Wisconsin","WY":"Wyoming"};
     function buildSearchText(s) {
@@ -587,6 +636,7 @@
       renderMobileCards(sorted);
       updateHeaderIndicators();
       loadColumnWidths();
+      updateActiveFiltersBar();
     }
     function sortList(list, column, direction) {
       const dir = direction === "asc" ? 1 : -1;
@@ -625,10 +675,11 @@
         star.addEventListener("click", e => { e.stopPropagation(); toggleFavorite(school.id); });
         favTd.appendChild(star); tr.appendChild(favTd);
 
+        const search = filterSearchEl.value.trim().toLowerCase();
         [[school.name],[school.division],[school.conference||""],[school.hockeyRankLabel||school.hockeyRank||""],[school.journalismStrength||""],[getLocation(school)],[school.headCoach||""],[school.coachEmail||""],[school.coachPhone||""]].forEach((item,idx) => {
           const td = document.createElement("td");
           if (idx===5) td.className = "location-cell";
-          td.textContent = item[0];
+          td.innerHTML = highlightText(item[0], search);
           tr.appendChild(td);
         });
 
@@ -913,17 +964,18 @@
       mobileCountEl.textContent = list.length + " school" + (list.length !== 1 ? "s" : "");
       if (!list.length) { mobileCardsEmpty.style.display = "block"; return; }
       mobileCardsEmpty.style.display = "none";
+      const mq = filterSearchEl.value.trim().toLowerCase();
       list.forEach(school => {
         const card = document.createElement("div");
         card.className = "mobile-card";
-        const coachLabel = school.headCoach ? `<div class="mobile-card-coach">${escapeHtml(school.coachType||"Head Coach")}: <strong>${escapeHtml(school.headCoach)}</strong></div>` : "";
-        const emailLink = school.coachEmail ? `<a href="mailto:${escapeHtml(school.coachEmail)}">${escapeHtml(school.coachEmail)}</a>` : "";
-        const phoneLink = school.coachPhone ? `<a href="tel:${escapeHtml(school.coachPhone)}">${escapeHtml(school.coachPhone)}</a>` : "";
+        const coachLabel = school.headCoach ? `<div class="mobile-card-coach">${escapeHtml(school.coachType||"Head Coach")}: <strong>${highlightText(school.headCoach, mq)}</strong></div>` : "";
+        const emailLink = school.coachEmail ? `<a href="mailto:${escapeHtml(school.coachEmail)}">${highlightText(school.coachEmail, mq)}</a>` : "";
+        const phoneLink = school.coachPhone ? `<a href="tel:${escapeHtml(school.coachPhone)}">${highlightText(school.coachPhone, mq)}</a>` : "";
         const contact = (emailLink||phoneLink) ? `<div class="mobile-card-contact">${emailLink}${phoneLink}</div>` : "";
         card.innerHTML = `
           <div class="mobile-card-main">
-            <div class="mobile-card-name">${escapeHtml(school.name)}</div>
-            <div class="mobile-card-meta">${escapeHtml(school.division)} • ${escapeHtml(school.conference||"TBD")} • Rank: ${escapeHtml(school.hockeyRankLabel||school.hockeyRank||"N/A")}</div>
+            <div class="mobile-card-name">${highlightText(school.name, mq)}</div>
+            <div class="mobile-card-meta">${escapeHtml(school.division)} • ${highlightText(school.conference||"TBD", mq)} • Rank: ${escapeHtml(school.hockeyRankLabel||school.hockeyRank||"N/A")}</div>
             ${coachLabel}${contact}
           </div>
           <span class="mobile-card-star${school.isFavorite?" favorite":""}" data-id="${escapeHtml(school.id)}">★</span>`;
@@ -1034,14 +1086,16 @@
     filterDiEl.addEventListener("change", applyFilters);
     filterDiiiEl.addEventListener("change", applyFilters);
     filterConferenceEl.addEventListener("change", applyFilters);
-    filterSearchEl.addEventListener("input", applyFilters);
-    document.getElementById("clear-filters").addEventListener("click", () => {
-      filterDiEl.checked = true; filterDiiiEl.checked = true;
-      filterConferenceEl.value = ""; filterSearchEl.value = "";
-      filterFavoritesEl.checked = false; filterSortEl.value = "hockeyRank";
-      sortState = { column:"hockeyRank", direction:"asc" };
+    filterSearchEl.addEventListener("input", () => {
+      document.getElementById("search-clear").style.display = filterSearchEl.value ? "block" : "none";
       applyFilters();
     });
+    document.getElementById("search-clear").addEventListener("click", () => {
+      filterSearchEl.value = "";
+      document.getElementById("search-clear").style.display = "none";
+      applyFilters();
+    });
+    document.getElementById("clear-filters").addEventListener("click", clearAllFilters);
     filterSortEl.addEventListener("change", applyFilters);
     filterFavoritesEl.addEventListener("change", applyFilters);
 
